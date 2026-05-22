@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>斗罗大陆MBTI人格测试 | 五维精准匹配你的魂师</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; background: #0a0718; color: #f0e9d8; overflow-x: hidden; }
+        .dynamic-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; background: radial-gradient(circle at 20% 30%, #1a0f2e, #03010a); }
+        canvas#particleCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+        .container { max-width: 850px; margin: 0 auto; padding: 2rem 1.5rem 4rem; position: relative; z-index: 2; backdrop-filter: blur(2px); }
+        .hero { text-align: center; margin-bottom: 2.5rem; animation: glowPulse 3s infinite alternate; }
+        .hero h1 { font-family: 'Playfair Display', serif; font-size: 2.8rem; background: linear-gradient(135deg, #FFD966, #E6B422, #C79A2E); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px rgba(230,180,34,0.4); letter-spacing: 2px; }
+        .hero p { font-size: 1.1rem; opacity: 0.9; margin-top: 0.5rem; }
+        .quiz-card, .result-card { background: rgba(20, 12, 36, 0.75); backdrop-filter: blur(12px); border-radius: 2rem; border: 1px solid rgba(230, 180, 80, 0.5); box-shadow: 0 25px 40px rgba(0,0,0,0.4); transition: transform 0.3s ease; padding: 1.8rem; }
+        .quiz-card:hover, .result-card:hover { transform: translateY(-5px); box-shadow: 0 30px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,215,0,0.3) inset; }
+        .question-header { display: flex; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px dashed rgba(255,215,0,0.5); padding-bottom: 0.7rem; }
+        .q-num { background: #e6b42230; padding: 0.2rem 0.9rem; border-radius: 40px; font-size: 0.9rem; }
+        .question-text { font-size: 1.5rem; font-weight: 600; margin: 1rem 0 2rem; line-height: 1.3; }
+        .options { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+        .option { background: rgba(10,7,24,0.7); border: 1px solid rgba(230,180,80,0.5); border-radius: 2rem; padding: 0.9rem 1.5rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 1rem; }
+        .option:hover { background: rgba(230,180,80,0.2); transform: translateX(8px); border-color: #ffd966; }
+        .option.selected { background: rgba(230,180,80,0.35); border-color: #ffcc44; box-shadow: 0 0 8px rgba(255,200,0,0.4); }
+        .option-letter { font-weight: 800; font-size: 1.3rem; width: 32px; color: #ffd966; }
+        .btn-group { display: flex; justify-content: space-between; margin-top: 1rem; gap: 1rem; }
+        .btn { background: linear-gradient(95deg, #2a1e42, #1a112e); border: none; padding: 0.7rem 1.5rem; border-radius: 3rem; color: #ffecb3; font-weight: bold; cursor: pointer; border: 1px solid #e6b42270; transition: 0.2s; }
+        .btn-primary { background: linear-gradient(95deg, #c99f2e, #a87b1a); color: #020112; box-shadow: 0 0 8px #ffd966; }
+        .btn-primary:hover { transform: scale(1.02); background: #e6b422; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .result-avatar { text-align: center; margin-bottom: 1rem; }
+        .character-img { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 3px solid #ffd966; background: #110d1f; box-shadow: 0 0 20px rgba(255,217,0,0.5); }
+        .character-name { font-size: 2rem; font-weight: bold; margin: 0.5rem 0; text-shadow: 0 0 6px gold; }
+        .武魂-badge { background: #e6b42230; border-radius: 40px; padding: 0.3rem 1rem; display: inline-flex; align-items: center; gap: 8px; margin: 0.5rem auto; }
+        .attr-tag { background: #2a1f44; border-radius: 20px; padding: 0.2rem 0.8rem; font-size: 0.8rem; display: inline-block; margin: 0.2rem; }
+        .魂技-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 1rem 0; }
+        .魂技-item { background: #1e162f; border-radius: 30px; padding: 0.2rem 1rem; font-size: 0.8rem; border-left: 3px solid #ffd966; }
+        .compat-bar { margin-top: 1rem; background: #150e24; border-radius: 30px; height: 10px; overflow: hidden; }
+        .compat-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffd966, #ffaa33); transition: width 1s ease; }
+        footer { text-align: center; margin-top: 2rem; font-size: 0.7rem; opacity: 0.6; }
+        @keyframes glowPulse { 0% { text-shadow: 0 0 2px #ffd966; } 100% { text-shadow: 0 0 20px #ffaa33; } }
+        .fade-transition { animation: fadeSlide 0.35s ease; }
+        @keyframes fadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%,100%{ transform: translateX(0); } 25%{ transform: translateX(-4px); } 75%{ transform: translateX(4px); } }
+        @media (max-width:550px){ .question-text{ font-size:1.2rem; } .character-img{ width:100px; height:100px; } .hero h1{ font-size:2rem; } }
+    </style>
+</head>
+<body>
+<div class="dynamic-bg"></div>
+<canvas id="particleCanvas"></canvas>
+<div class="container" id="app"></div>
+
+<script>
+    // ============================================================
+    // 斗罗大陆 MBTI 五维人格测试 (25题·斗罗世界)
+    // 优先加载用户上传的PNG图片，不存在时自动生成Canvas头像
+    // 维度: E/I (外向/内向), S/N (实感/直觉), T/F (思考/情感), J/P (判断/感知), Battle/Assist (战斗/辅助)
+    // ============================================================
+
+    // ---------- 角色档案 (包含五维数值 0-100) ----------
+    const ROSTER = [
+        { name:"唐三", wuhun:"昊天锤/蓝银皇", icon:"⚜️🌿", type:"控制·强攻", skills:"【蓝银霸王枪】【昊天九绝】【乱披风锤法】", personality:"沉稳坚韧、智勇双全", color:"#2c3e66", dim:{ E:45, S:60, T:75, J:80, B:85 }, imgFile:"唐三.png" },
+        { name:"小舞", wuhun:"柔骨兔", icon:"🐇🌸", type:"敏攻", skills:"【腰弓】【无敌金身】【爆杀八段摔】", personality:"天真烂漫、为爱执着", color:"#b95f89", dim:{ E:70, S:50, T:30, J:40, B:75 }, imgFile:"小舞.png" },
+        { name:"戴沐白", wuhun:"白虎", icon:"🐅⚡", type:"强攻", skills:"【白虎金刚变】【白虎烈光波】", personality:"狂傲霸气、守护同伴", color:"#c99f2e", dim:{ E:75, S:70, T:65, J:70, B:90 }, imgFile:"戴沐白.png" },
+        { name:"朱竹清", wuhun:"幽冥灵猫", icon:"🐈⬛🌙", type:"敏攻", skills:"【幽冥影分身】【幽冥斩】", personality:"冷艳孤傲、忠诚", color:"#3b2e4a", dim:{ E:25, S:60, T:70, J:65, B:80 }, imgFile:"朱竹清.png" },
+        { name:"奥斯卡", wuhun:"香肠", icon:"🌭✨", type:"食物系辅助", skills:"【恢复大香肠】【亢奋粉红肠】", personality:"乐观幽默、重义气", color:"#78a56c", dim:{ E:65, S:45, T:40, J:30, B:20 }, imgFile:"奥斯卡.png" },
+        { name:"宁荣荣", wuhun:"九宝琉璃塔", icon:"🏯💎", type:"辅助", skills:"【九宝有名·力】【速】【防御】", personality:"骄傲善良、成长型", color:"#cfb284", dim:{ E:60, S:40, T:35, J:50, B:15 }, imgFile:"宁荣荣.png" },
+        { name:"马红俊", wuhun:"邪火凤凰", icon:"🔥🦅", type:"强攻·火", skills:"【凤凰啸天击】【浴火凤凰】", personality:"豪放直率、重情", color:"#c2492d", dim:{ E:70, S:65, T:55, J:45, B:85 }, imgFile:"马红俊.png" },
+        { name:"霍雨浩", wuhun:"灵眸/冰碧蝎", icon:"❄️👁️", type:"精神控制", skills:"【精神探测】【灵魂冲击】", personality:"隐忍坚毅、至情", color:"#3a6ea5", dim:{ E:35, S:35, T:60, J:55, B:70 }, imgFile:"霍雨浩.png" },
+        { name:"王冬", wuhun:"光明女神蝶", icon:"🦋✨", type:"强攻·光", skills:"【蝶神之光】【蝶神斩】", personality:"傲娇直率、善良", color:"#e8b4c7", dim:{ E:55, S:40, T:50, J:45, B:75 }, imgFile:"王冬.png" },
+        { name:"唐雅", wuhun:"蓝银草", icon:"🌿💧", type:"控制", skills:"【蓝银缠绕】【生命之光】", personality:"热情开朗、重视伙伴", color:"#5e8c6a", dim:{ E:65, S:55, T:40, J:50, B:50 }, imgFile:"唐雅.png" },
+        { name:"贝贝", wuhun:"光明圣龙", icon:"🐉✨", type:"强攻", skills:"【光明龙神斩】【圣龙咆哮】", personality:"温润儒雅、有担当", color:"#e5b83c", dim:{ E:55, S:55, T:55, J:65, B:75 }, imgFile:"贝贝.png" },
+        { name:"徐三石", wuhun:"玄武", icon:"🐢⛰️", type:"防御", skills:"【玄武降临】【玄冥震】", personality:"外粗内细、重情义", color:"#4f7942", dim:{ E:50, S:65, T:50, J:60, B:65 }, imgFile:"徐三石.png" },
+        { name:"萧萧", wuhun:"三生镇魂鼎", icon:"🔔🎵", type:"控制辅助", skills:"【鼎之震荡】【三生镇魂】", personality:"温柔细腻、坚韧", color:"#8b5f8c", dim:{ E:45, S:50, T:45, J:55, B:40 }, imgFile:"萧萧.png" },
+        { name:"乐正宇", wuhun:"神圣天使", icon:"👼✨", type:"强攻", skills:"【圣光审判】【天使之翼】", personality:"正直骄傲、正义感", color:"#e8b12e", dim:{ E:70, S:50, T:60, J:70, B:85 }, imgFile:"乐正宇.png" },
+        { name:"唐舞麟", wuhun:"蓝银草/金龙王", icon:"🌿🐉", type:"强攻恢复", skills:"【金龙爪】【金龙霸体】", personality:"阳光坚韧、不屈", color:"#2f6b47", dim:{ E:60, S:55, T:55, J:60, B:80 }, imgFile:"唐舞麟.png" },
+        { name:"古月", wuhun:"元素使者", icon:"🌊🔥🌪️", type:"远攻·元素", skills:"【冰元素掌控】【火元素爆发】", personality:"神秘冷静、内敛", color:"#40a0b0", dim:{ E:30, S:30, T:65, J:50, B:70 }, imgFile:"古月.png" },
+        { name:"谢邂", wuhun:"时空之龙", icon:"⏳🐉", type:"敏攻", skills:"【时空逆转】【光龙刃】", personality:"机灵自信、傲娇", color:"#8b6b4d", dim:{ E:55, S:45, T:55, J:40, B:70 }, imgFile:"谢邂.png" },
+        { name:"原恩夜辉", wuhun:"泰坦巨猿", icon:"🦍⚡", type:"力量强攻", skills:"【巨猿之握】【泰坦之锤】", personality:"内敛强大、正义", color:"#9b4e3e", dim:{ E:40, S:70, T:60, J:55, B:90 }, imgFile:"原恩夜辉.png" },
+        { name:"许小言", wuhun:"星轮冰杖", icon:"🌟❄️", type:"控制·冰", skills:"【冰星陨落】【星辰冻结】", personality:"温柔聪慧、冷静", color:"#6f8cbf", dim:{ E:45, S:40, T:50, J:55, B:45 }, imgFile:"许小言.png" },
+        { name:"叶星澜", wuhun:"星神剑", icon:"⭐🗡️", type:"强攻·剑", skills:"【星光斩】【星神降临】", personality:"清冷孤高、剑心通明", color:"#5d5f7a", dim:{ E:30, S:50, T:70, J:65, B:85 }, imgFile:"叶星澜.png" }
+    ];
+
+    // ----- 25道斗罗世界题目 (每题影响2个维度) -----
+    const QUESTIONS = [
+        { text: "史莱克考核中，你更想如何证明自己？", opts: ["正面击败强敌", "用计谋智取", "辅助队友获胜", "默默修炼积累"], eff: [{d:"B",v:[90,40,15,30]},{d:"E",v:[70,40,30,80]}] },
+        { text: "面对万年魂兽，第一反应是？", opts: ["全力战斗速决", "寻找弱点控制", "保护同伴撤退", "观察后行动"], eff: [{d:"B",v:[95,50,20,40]},{d:"J",v:[80,60,30,50]}] },
+        { text: "海神缘大会上，如何吸引对方？", opts: ["主动展示实力", "含蓄温柔陪伴", "幽默风趣交谈", "默默守护"], eff: [{d:"E",v:[85,40,70,20]},{d:"F",v:[60,30,40,70]}] },
+        { text: "获得珍贵魂骨会怎么做？", opts: ["立刻吸收增强", "研究最佳用法", "赠送给伙伴", "保存为底牌"], eff: [{d:"J",v:[80,50,30,70]},{d:"B",v:[85,60,10,40]}] },
+        { text: "团队战斗中的天然角色？", opts: ["主攻手突破", "战术师布局", "守护盾吸收", "奇袭手偷袭"], eff: [{d:"B",v:[95,30,70,80]},{d:"N",v:[60,80,40,50]}] },
+        { text: "更欣赏哪种武魂特性？", opts: ["极致攻击", "千变万化控制", "治愈守护", "精神领域"], eff: [{d:"N",v:[60,80,30,70]},{d:"F",v:[70,40,30,50]}] },
+        { text: "修炼瓶颈时你会？", opts: ["疯狂挑战极限", "静心参悟武魂", "请教师长", "外出游历"], eff: [{d:"J",v:[80,60,40,30]},{d:"E",v:[50,70,60,40]}] },
+        { text: "对魂导器的态度？", opts: ["热衷研究改进", "保持传统魂技", "适度使用", "完全依赖魂力"], eff: [{d:"N",v:[80,20,60,30]},{d:"J",v:[70,30,50,40]}] },
+        { text: "想成为哪种魂师？", opts: ["七怪领袖", "宗门长老", "自由游侠", "学院导师"], eff: [{d:"E",v:[80,40,60,30]},{d:"B",v:[90,30,70,20]}] },
+        { text: "面对伤害过你的人？", opts: ["全力复仇", "原谅放下", "用实力证明", "交给命运"], eff: [{d:"F",v:[80,20,70,40]},{d:"J",v:[70,30,60,50]}] },
+        { text: "最向往史莱克的哪里？", opts: ["海神湖修炼", "图书馆钻研", "斗魂场实战", "星斗森林猎杀"], eff: [{d:"E",v:[40,80,70,50]},{d:"N",v:[60,80,40,70]}] },
+        { text: "挑选队友最看重？", opts: ["绝对实力", "默契配合", "忠诚可靠", "乐观开朗"], eff: [{d:"F",v:[70,50,80,30]},{d:"B",v:[85,60,70,40]}] },
+        { text: "想要重组武魂选哪种？", opts: ["强攻龙类", "控制植物", "辅助宝石", "敏攻兽类"], eff: [{d:"N",v:[60,70,40,50]},{d:"B",v:[90,60,10,75]}] },
+        { text: "魂师大赛最重要的是？", opts: ["胜利荣耀", "历练成长", "结交挚友", "展示自我"], eff: [{d:"F",v:[80,60,30,50]},{d:"J",v:[70,40,30,60]}] },
+        { text: "喜欢的战斗节奏？", opts: ["雷霆一击速决", "步步控制", "持久消耗", "游走偷袭"], eff: [{d:"J",v:[80,60,30,40]},{d:"B",v:[90,50,70,80]}] },
+        { text: "对唐门暗器的看法？", opts: ["痴迷研究", "不屑使用", "作为底牌", "改良创新"], eff: [{d:"N",v:[80,20,40,70]},{d:"J",v:[60,30,80,70]}] },
+        { text: "成为封号斗罗想开创？", opts: ["新宗门", "新魂技流派", "魂导器革新", "秘境探索"], eff: [{d:"E",v:[70,40,30,60]},{d:"N",v:[50,80,60,90]}] },
+        { text: "情绪低落时会？", opts: ["独自修炼发泄", "找朋友倾诉", "大吃一顿", "外出旅行"], eff: [{d:"E",v:[80,20,40,60]},{d:"F",v:[60,80,30,50]}] },
+        { text: "最想要的魂技属性？", opts: ["爆炸输出", "绝对控制", "群体治愈", "空间移动"], eff: [{d:"B",v:[95,60,10,50]},{d:"N",v:[60,80,30,90]}] },
+        { text: "对命运的安排？", opts: ["人定胜天", "顺应天命", "平衡中庸", "创造奇迹"], eff: [{d:"J",v:[80,30,50,70]},{d:"F",v:[70,40,50,60]}] },
+        { text: "更享受哪种社交？", opts: ["大型聚会", "三五好友", "一对一深谈", "独自清净"], eff: [{d:"E",v:[80,60,40,10]}] },
+        { text: "战斗决策依赖？", opts: ["战斗本能", "理性计算", "直觉灵感", "同伴建议"], eff: [{d:"N",v:[60,70,80,40]},{d:"F",v:[70,80,30,50]}] },
+        { text: "武魂二次觉醒方向？", opts: ["破坏力翻倍", "控制力进化", "辅助范围扩大", "速度极致"], eff: [{d:"B",v:[95,60,10,75]}] },
+        { text: "吸引你的魂兽年限？", opts: ["十万年化形", "万年王者", "千年变异", "百年稀有"], eff: [{d:"N",v:[60,80,70,50]},{d:"J",v:[70,50,60,40]}] },
+        { text: "人生最终理想？", opts: ["成神不朽", "守护挚爱", "开创时代", "探寻武魂真理"], eff: [{d:"E",v:[60,30,70,50]},{d:"F",v:[70,40,60,80]}] }
+    ];
+
+    // 计算用户五维得分
+    function computeUserDimensions(answers) {
+        let sums = { E:0, I:0, S:0, N:0, T:0, F:0, J:0, P:0, B:0, A:0 };
+        let cnts = { E:0, I:0, S:0, N:0, T:0, F:0, J:0, P:0, B:0, A:0 };
+        for(let i=0; i<answers.length; i++) {
+            let opt = answers[i];
+            if(opt === undefined || opt === null) continue;
+            for(let eff of QUESTIONS[i].eff) {
+                let dim = eff.d;
+                let val = eff.v[opt];
+                if(dim === "E") { sums.E += val; cnts.E++; }
+                else if(dim === "B") { sums.B += val; cnts.B++; }
+                else if(dim === "J") { sums.J += val; cnts.J++; }
+                else if(dim === "F") { sums.F += val; cnts.F++; }
+                else if(dim === "N") { sums.N += val; cnts.N++; }
+            }
+        }
+        let avg = (s,c) => c>0 ? s/c : 50;
+        let E = avg(sums.E, cnts.E);
+        let B = avg(sums.B, cnts.B);
+        let J = avg(sums.J, cnts.J);
+        let F = avg(sums.F, cnts.F);
+        let N = avg(sums.N, cnts.N);
+        let I = 100 - E, S = 100 - N, T = 100 - F, P = 100 - J, A = 100 - B;
+        return { E, I, S, N, T, F, J, P, B, A };
+    }
+
+    // 匹配最佳角色
+    function findBestCharacter(user) {
+        let best = null, bestScore = -Infinity;
+        for(let ch of ROSTER) {
+            let d = ch.dim;
+            let score = 0;
+            score += 20 - Math.abs(user.E - d.E)/5;
+            score += 20 - Math.abs(user.S - d.S)/5;
+            score += 20 - Math.abs(user.T - d.T)/5;
+            score += 20 - Math.abs(user.J - d.J)/5;
+            score += 20 - Math.abs(user.B - d.B)/5;
+            if(score > bestScore) { bestScore = score; best = ch; }
+        }
+        return best;
+    }
+
+    // 生成头像Canvas (作为fallback)
+    function drawFallbackAvatar(character) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200; canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0,0,200,200);
+        grad.addColorStop(0, character.color);
+        grad.addColorStop(1, "#1f1735");
+        ctx.beginPath(); ctx.arc(100,100,98,0,Math.PI*2);
+        ctx.fillStyle = grad; ctx.fill();
+        ctx.strokeStyle = "#FFD966"; ctx.lineWidth=4;
+        ctx.beginPath(); ctx.arc(100,100,95,0,Math.PI*2); ctx.stroke();
+        ctx.font = "bold 68px 'Segoe UI'";
+        ctx.fillStyle = "#FFF3cf"; ctx.shadowBlur=12;
+        let initial = character.name.charAt(0);
+        if(character.name === "唐三") initial = "唐";
+        else if(character.name === "小舞") initial = "舞";
+        else if(character.name === "戴沐白") initial = "戴";
+        else if(character.name === "唐舞麟") initial = "麟";
+        ctx.fillText(initial, 72, 135);
+        ctx.font = "24px 'Segoe UI'";
+        ctx.fillStyle = "#FFD58C";
+        ctx.fillText("⚜️", 150, 165);
+        return canvas.toDataURL();
+    }
+
+    // 获取头像：优先使用上传的PNG，加载失败则用fallback
+    function getCharacterImageUrl(character) {
+        // 直接返回图片路径，通过onerror处理加载失败
+        return character.imgFile;
+    }
+
+    // --- UI 状态管理 ---
+    let curIdx = 0;
+    let selections = new Array(QUESTIONS.length).fill(null);
+    let testFinished = false;
+    let matched = null;
+    let dimResult = null;
+
+    const app = document.getElementById('app');
+
+    function renderFull() {
+        const hero = `<div class="hero"><h1>斗罗大陆MBTI人格测试</h1><p><i class="fas fa-dragon"></i> 五维精准匹配 · 测测你的本命魂师</p></div>`;
+        if(testFinished && matched) {
+            app.innerHTML = hero + renderResult();
+            document.getElementById('restartBtn')?.addEventListener('click', resetTest);
+        } else {
+            app.innerHTML = hero + renderQuiz();
+            bindQuizEvents();
+        }
+    }
+
+    function renderQuiz() {
+        const q = QUESTIONS[curIdx];
+        const sel = selections[curIdx];
+        return `<div class="quiz-card fade-transition">
+            <div class="question-header"><span class="q-num"><i class="fas fa-feather-alt"></i> 第${curIdx+1}/25题</span></div>
+            <div class="question-text">${q.text}</div>
+            <div class="options" id="optArea">
+                ${q.opts.map((opt,i) => `<div class="option ${sel===i ? 'selected' : ''}" data-val="${i}"><span class="option-letter">${String.fromCharCode(65+i)}</span><span>${opt}</span></div>`).join('')}
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="prevBtn" ${curIdx===0 ? 'disabled' : ''}><i class="fas fa-arrow-left"></i> 上一题</button>
+                <button class="btn btn-primary" id="nextBtn">${curIdx===24 ? '揭晓魂师' : '下一题'}</button>
+            </div>
+        </div><footer>✦ 基于MBTI五维人格算法 · 答案没有对错 ✦</footer>`;
+    }
+
+    function bindQuizEvents() {
+        document.querySelectorAll('.option').forEach(opt => {
+            opt.onclick = (e) => {
+                let val = parseInt(opt.dataset.val);
+                selections[curIdx] = val;
+                document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+            };
+        });
+        const prev = document.getElementById('prevBtn');
+        const next = document.getElementById('nextBtn');
+        if(prev) prev.onclick = () => { if(curIdx>0) { curIdx--; renderFull(); } };
+        if(next) next.onclick = () => {
+            if(selections[curIdx] === null) {
+                next.style.animation = "shake 0.3s";
+                setTimeout(()=>next.style.animation="",300);
+                return;
+            }
+            if(curIdx === 24) {
+                if(selections.some(v=>v===null)) { alert("请完成全部25道题目，再揭晓你的本命魂师！"); return; }
+                dimResult = computeUserDimensions(selections);
+                matched = findBestCharacter(dimResult);
+                testFinished = true;
+                renderFull();
+            } else {
+                curIdx++;
+                renderFull();
+            }
+        };
+    }
+
+    function renderResult() {
+        const skills = matched.skills.split(/[【】]/).filter(s=>s.trim());
+        const compat = Math.floor(65 + Math.random() * 28);
+        const imgSrc = getCharacterImageUrl(matched);
+        // 图片加载失败时自动替换为fallback canvas
+        const imgOnError = `this.onerror=null; this.src='${drawFallbackAvatar(matched)}';`;
+        
+        return `<div class="result-card fade-transition">
+            <div class="result-avatar">
+                <img class="character-img" src="${imgSrc}" alt="${matched.name}" onerror="${imgOnError}">
+                <div class="character-name">✨ ${matched.name} ✨</div>
+                <div class="武魂-badge"><span>${matched.icon}</span> 武魂：${matched.wuhun}</div>
+                <div><span class="attr-tag">${matched.type}</span></div>
+            </div>
+            <div><strong><i class="fas fa-dragon"></i> 魂技：</strong><div class="魂技-grid">${skills.map(s=>`<span class="魂技-item">${s}</span>`).join('')}</div></div>
+            <div><strong><i class="fas fa-heart"></i> 性格特质：</strong> ${matched.personality}</div>
+            <div><strong><i class="fas fa-handshake"></i> 魂师适配度：</strong> ${compat}%</div>
+            <div class="compat-bar"><div class="compat-fill" style="width:${compat}%"></div></div>
+            <div style="margin-top:1.5rem; text-align:center;"><button class="btn btn-primary" id="restartBtn"><i class="fas fa-sync-alt"></i> 重新测试</button></div>
+        </div><footer>✦ 五维人格匹配 · 你的魂师之路 ✦</footer>`;
+    }
+
+    function resetTest() {
+        curIdx = 0;
+        selections.fill(null);
+        testFinished = false;
+        matched = null;
+        dimResult = null;
+        renderFull();
+    }
+
+    // 粒子特效
+    function initParticles() {
+        const canvas = document.getElementById('particleCanvas');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const resize = () => { canvas.width = innerWidth; canvas.height = innerHeight; };
+        window.addEventListener('resize', resize);
+        resize();
+        for(let i=0;i<100;i++) particles.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*2+1, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.2, col:`rgba(255,210,90,${Math.random()*0.5+0.2})` });
+        function animate() {
+            if(!ctx) return;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            particles.forEach(p => {
+                ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+                ctx.fillStyle = p.col; ctx.fill();
+                p.x += p.vx; p.y += p.vy;
+                if(p.x<0) p.x = canvas.width; if(p.x>canvas.width) p.x=0;
+                if(p.y<0) p.y = canvas.height; if(p.y>canvas.height) p.y=0;
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    }
+    initParticles();
+    renderFull();
+</script>
+</body>
+</html>
