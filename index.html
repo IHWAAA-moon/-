@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>斗罗大陆性格测试 | 测测你的武魂真身</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: #0a0718;
+            color: #f0e9d8;
+            overflow-x: hidden;
+            position: relative;
+        }
+        .dynamic-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(circle at 20% 30%, #1a0f2e, #03010a);
+        }
+        canvas#particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+            position: relative;
+            z-index: 2;
+            backdrop-filter: blur(2px);
+        }
+        .hero {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            animation: glowPulse 3s infinite alternate;
+        }
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            background: linear-gradient(135deg, #FFD966, #E6B422, #C79A2E);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(230,180,34,0.4);
+            letter-spacing: 2px;
+        }
+        .hero p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+        .quiz-card, .result-card {
+            background: rgba(20, 12, 36, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            border: 1px solid rgba(230, 180, 80, 0.5);
+            box-shadow: 0 25px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,215,0,0.2) inset;
+            transition: transform 0.3s ease, box-shadow 0.3s;
+            padding: 1.8rem;
+        }
+        .quiz-card:hover, .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 50px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,215,0,0.5) inset;
+        }
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            border-bottom: 1px dashed rgba(255,215,0,0.5);
+            padding-bottom: 0.7rem;
+        }
+        .q-num {
+            font-size: 1.1rem;
+            background: #e6b42230;
+            padding: 0.2rem 0.9rem;
+            border-radius: 40px;
+        }
+        .q-total {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        .question-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 1rem 0 2rem 0;
+            line-height: 1.3;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .option {
+            background: rgba(10, 7, 24, 0.7);
+            border: 1px solid rgba(230, 180, 80, 0.5);
+            border-radius: 2rem;
+            padding: 0.9rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 500;
+        }
+        .option:hover {
+            background: rgba(230, 180, 80, 0.2);
+            transform: scale(1.02) translateX(8px);
+            border-color: #ffd966;
+            box-shadow: 0 5px 12px rgba(0,0,0,0.3);
+        }
+        .option.selected {
+            background: rgba(230, 180, 80, 0.35);
+            border-color: #ffcc44;
+            box-shadow: 0 0 8px rgba(255,200,0,0.4);
+        }
+        .option-letter {
+            font-weight: 800;
+            font-size: 1.3rem;
+            width: 32px;
+            color: #ffd966;
+        }
+        .btn-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+        }
+        .btn {
+            background: linear-gradient(95deg, #2a1e42, #1a112e);
+            border: none;
+            padding: 0.8rem 1.8rem;
+            border-radius: 3rem;
+            color: #ffecb3;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+            border: 1px solid #e6b42270;
+        }
+        .btn-primary {
+            background: linear-gradient(95deg, #c99f2e, #a87b1a);
+            color: #020112;
+            font-weight: bold;
+            box-shadow: 0 0 8px #ffd966;
+        }
+        .btn-primary:hover {
+            transform: scale(1.03);
+            background: linear-gradient(95deg, #e6b422, #c9921a);
+            box-shadow: 0 0 15px #ffcc44;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result-avatar {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .character-img {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #ffd966;
+            box-shadow: 0 0 25px rgba(255, 217, 0, 0.6);
+            background: #110d1f;
+        }
+        .character-name {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+            text-shadow: 0 0 6px gold;
+        }
+        .武魂-badge {
+            background: #e6b42230;
+            border-radius: 40px;
+            padding: 0.3rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0.5rem auto;
+            font-size: 1rem;
+        }
+        .武魂-icon {
+            font-size: 1.5rem;
+        }
+        .attr-tag {
+            background: #2a1f44;
+            border-radius: 20px;
+            padding: 0.25rem 0.8rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-block;
+            margin: 0.2rem;
+        }
+        .魂技-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 1rem 0;
+        }
+        .魂技-item {
+            background: #1e162f;
+            border-radius: 30px;
+            padding: 0.3rem 1rem;
+            font-size: 0.85rem;
+            border-left: 3px solid #ffd966;
+        }
+        .compat-bar {
+            margin-top: 1.2rem;
+            background: #150e24;
+            border-radius: 30px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+        }
+        .compat-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ffd966, #ffaa33);
+            border-radius: 30px;
+            transition: width 1s ease-out;
+        }
+        footer {
+            text-align: center;
+            margin-top: 2.5rem;
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+        @keyframes glowPulse {
+            0% { text-shadow: 0 0 2px #ffd966; }
+            100% { text-shadow: 0 0 20px #ffaa33; }
+        }
+        .fade-transition {
+            animation: fadeSlide 0.35s ease-out;
+        }
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+        @media (max-width: 550px) {
+            .question-text { font-size: 1.2rem; }
+            .character-img { width: 100px; height: 100px; }
+            .hero h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="dynamic-bg"></div>
+<canvas id="particleCanvas"></canvas>
+
+<div class="container" id="app"></div>
+
+<script>
+    // ---------- 斗罗大陆人物库 (20位，图片格式为png) ----------
+    const CHARACTERS = [
+        { id: "tang_san", name: "唐三",武魂:"昊天锤 / 蓝银皇",武魂图案:"⚜️🌿",属性:"近战·控制",魂技:"【缠绕】【寄生】【蓝银霸王枪】【昊天九绝】【乱披风锤法】",性格:"沉稳坚韧、重情重义、智勇双全", img: "唐三.png" },
+        { id: "xiao_wu", name: "小舞",武魂:"柔骨兔",武魂图案:"🐇🌸",属性:"敏攻·近战",魂技:"【腰弓】【无敌金身】【瞬移】【爆杀八段摔】",性格:"天真烂漫、率真勇敢、为爱执着", img: "小舞.png" },
+        { id: "dai_mubai", name: "戴沐白",武魂:"白虎",武魂图案:"🐅⚡",属性:"强攻",魂技:"【白虎金刚变】【白虎烈光波】【白虎魔神变】",性格:"狂傲不羁、豪爽霸气、守护同伴", img: "戴沐白.png" },
+        { id: "zhu_zhuqing", name: "朱竹清",武魂:"幽冥灵猫",武魂图案:"🐈⬛🌙",属性:"敏攻",魂技:"【幽冥影分身】【幽冥斩】【幽冥附体】",性格:"冷艳孤傲、外冷内热、忠诚", img: "朱竹清.png" },
+        { id: "osier", name: "奥斯卡",武魂:"香肠",武魂图案:"🌭✨",属性:"食物系辅助",魂技:"【恢复大香肠】【亢奋粉红肠】【超越极限墨绿肠】",性格:"乐观开朗、风趣幽默、义气", img: "奥斯卡.png" },
+        { id: "ning_rongrong", name: "宁荣荣",武魂:"九宝琉璃塔",武魂图案:"🏯💎",属性:"辅助",魂技:"【九宝有名·力】【速】【魂】【防御增幅】",性格:"骄傲却不失善良、成长型大家闺秀", img: "宁荣荣.png" },
+        { id: "ma_hongjun", name: "马红俊",武魂:"邪火凤凰",武魂图案:"🔥🦅",属性:"强攻·火",魂技:"【凤凰啸天击】【凤凰涅槃】【浴火凤凰】",性格:"豪放直率、重情重义", img: "马红俊.png" },
+        { id: "huo_yuhao", name: "霍雨浩",武魂:"灵眸 / 冰碧帝皇蝎",武魂图案:"❄️👁️",属性:"控制·精神",魂技:"【精神探测】【灵魂冲击】【冰皇之怒】",性格:"隐忍坚毅、至情至性、天赋异禀", img: "霍雨浩.png" },
+        { id: "wang_dong", name: "王冬",武魂:"光明女神蝶 / 昊天锤",武魂图案:"🦋✨",属性:"强攻·光",魂技:"【蝶神之光】【光明印记】【蝶神斩】",性格:"傲娇直率、善良执着", img: "王冬.png" },
+        { id: "tang_ya", name: "唐雅",武魂:"蓝银草",武魂图案:"🌿💧",属性:"控制·韧",魂技:"【蓝银缠绕】【蓝银突刺】【生命之光】",性格:"热情开朗、重视伙伴", img: "唐雅.png" },
+        { id: "bei_be", name: "贝贝",武魂:"光明圣龙",武魂图案:"🐉✨",属性:"强攻",魂技:"【光明龙神斩】【圣龙咆哮】【光明庇佑】",性格:"温润儒雅、有担当", img: "贝贝.png" },
+        { id: "xu_san", name: "徐三石",武魂:"玄武",武魂图案:"🐢⛰️",属性:"防御·强攻",魂技:"【玄武降临】【龟甲盾】【玄冥震】",性格:"外粗内细、重情义", img: "徐三石.png" },
+        { id: "xiao_xiao", name: "萧萧",武魂:"三生镇魂鼎 / 九凤来仪箫",武魂图案:"🔔🎵",属性:"控制·辅助",魂技:"【鼎之震荡】【箫声夺魄】【三生镇魂】",性格:"温柔坚韧、心思细腻", img: "萧萧.png" },
+        { id: "le_zhengyu", name: "乐正宇",武魂:"神圣天使",武魂图案:"👼✨",属性:"强攻·光明",魂技:"【圣光审判】【天使之翼】【神圣庇护】",性格:"正直骄傲、充满正义感", img: "乐正宇.png" },
+        { id: "tang_wulin", name: "唐舞麟",武魂:"蓝银草 / 金龙王",武魂图案:"🌿🐉",属性:"强攻·恢复",魂技:"【金龙爪】【金龙霸体】【蓝银突刺阵】",性格:"阳光坚韧、不屈不挠", img: "唐舞麟.png" },
+        { id: "gu_yue", name: "古月",武魂:"元素使者",武魂图案:"🌊🔥🌪️",属性:"远攻·元素",魂技:"【冰元素掌控】【火元素爆发】【风刃漩涡】",性格:"神秘冷静、情感内敛", img: "古月.png" },
+        { id: "xie_xie", name: "谢邂",武魂:"时空之龙",武魂图案:"⏳🐉",属性:"敏攻",魂技:"【时空逆转】【光龙刃】【影龙突袭】",性格:"机灵自信、略傲娇", img: "谢邂.png" },
+        { id: "yuan_ye", name: "原恩夜辉",武魂:"泰坦巨猿",武魂图案:"🦍⚡",属性:"力量型强攻",魂技:"【巨猿之握】【大地震撼】【泰坦之锤】",性格:"内敛强大、正义感", img: "原恩夜辉.png" },
+        { id: "xu_yanxing", name: "许小言",武魂:"星轮冰杖",武魂图案:"🌟❄️",属性:"控制·冰",魂技:"【冰星陨落】【星辰冻结】【星轮之域】",性格:"温柔聪慧、冷静可靠", img: "许小言.png" },
+        { id: "ye_xinglan", name: "叶星澜",武魂:"星神剑",武魂图案:"⭐🗡️",属性:"强攻·剑",魂技:"【星光斩】【剑意星陨】【星神降临】",性格:"清冷孤高、剑心通明", img: "叶星澜.png" }
+    ];
+
+    // 25道题目
+    const QUESTIONS = [
+        { text: "面对强大的魂兽袭击，你第一反应是？", options: ["正面对抗，绝不退缩", "机智寻找弱点反击", "保护同伴优先撤退", "用计谋周旋，借力打力"] },
+        { text: "你在团队中更倾向于？", options: ["核心输出，一锤定音", "战术制定，掌控全局", "守护伙伴，坚不可摧", "灵敏偷袭，奇袭破敌"] },
+        { text: "对于武魂的修炼理念？", options: ["不断挑战极限突破自我", "稳扎稳打，厚积薄发", "寻求武魂变异，另辟蹊径", "借助外力，融合天地精华"] },
+        { text: "什么最能激励你？", options: ["守护挚爱之人的笑容", "成为巅峰强者的荣耀", "探寻世界未知的奥秘", "和伙伴并肩作战的羁绊"] },
+        { text: "面对宿敌时，你的风格？", options: ["碾压式强攻", "诡道制胜", "耐力消耗，后发制人", "先发制人，闪电突袭"] },
+        { text: "你认为最重要的品质？", options: ["勇气", "智慧", "忠诚", "信念"] },
+        { text: "假期更喜欢做什么？", options: ["挑战魂兽森林", "钻研魂导器/武魂理论", "陪伴朋友修炼娱乐", "独处冥想感悟"] },
+        { text: "战斗中你想听到队友说什么？", options: ["靠你了！", "相信你！", "交给你了！", "跟紧我！"] },
+        { text: "如果武魂有第二形态，你希望是？", options: ["巨大化威力增强", "速度爆发型", "元素附魔", "治疗辅助"] },
+        { text: "你最向往那种力量？", options: ["纯粹破坏力", "精神力掌控", "生命力复苏", "时间空间法则"] },
+        { text: "对你来说，战斗的意义？", options: ["守护一切", "超越自我", "维护正义", "无所谓，随心而战"] },
+        { text: "选择恋人标准？", options: ["灵魂契合", "美貌温柔", "实力强大", "互补性格"] },
+        { text: "遇到挫折通常会？", options: ["愈挫愈勇", "反思策略", "找人倾诉", "独自沉默消化"] },
+        { text: "哪种魂兽最吸引你？", options: ["龙类王者", "远古巨兽", "元素精灵", "幻系灵兽"] },
+        { text: "在史莱克学院你最看重？", options: ["残酷训练", "友情岁月", "藏书阁智慧", "竞技荣耀"] },
+        { text: "你的战斗信条？", options: ["一击必杀", "控制战场", "持久消耗", "灵活游击"] },
+        { text: "更欣赏哪种领导者？", options: ["霸道强权", "足智多谋", "仁德宽厚", "以身作则"] },
+        { text: "得到一本失传魂技秘籍会？", options: ["立刻修炼", "谨慎研究", "分享好友", "封存待时机"] },
+        { text: "业余爱好倾向？", options: ["锻造暗器/魂导器", "烹饪美食", "种植花草", "观星冥想"] },
+        { text: "海神缘相亲大会你会？", options: ["主动出击", "静观其变", "含蓄表达", "用实力吸引"] },
+        { text: "最不想失去的东西？", options: ["记忆", "武魂", "情感", "尊严"] },
+        { text: "如果穿越斗罗，你想要的身份？", options: ["宗门少主", "平民天才", "皇室后裔", "神秘流浪者"] },
+        { text: "遇到强敌侵犯伙伴，你会？", options: ["以命相搏", "战术迂回", "呼叫增援", "爆发潜力"] },
+        { text: "你认为魂师最高境界？", options: ["神级强者", "守护神", "自由逍遥", "开创流派"] },
+        { text: "最终梦想是？", options: ["成神永恒", "和平盛世", "探索宇宙", "组建最强战队"] }
+    ];
+
+    function updateScores(scores, optIndex) {
+        CHARACTERS.forEach(role => {
+            let add = 0;
+            const id = role.id;
+            if (optIndex === 0) { 
+                if (["tang_san","dai_mubai","ma_hongjun","huo_yuhao","tang_wulin","bei_be","le_zhengyu","ye_xinglan"].includes(id)) add = 2;
+                else if (["xiao_wu","ning_rongrong","wang_dong","xiao_xiao"].includes(id)) add = 1;
+            } else if (optIndex === 1) { 
+                if (["tang_san","huo_yuhao","gu_yue","xie_xie","tang_ya","xu_yanxing"].includes(id)) add = 2;
+                else if (["osier","ning_rongrong","wang_dong","xiao_xiao"].includes(id)) add = 1;
+            } else if (optIndex === 2) { 
+                if (["xiao_wu","zhu_zhuqing","tang_ya","xu_san","yuan_ye","bei_be","xiao_xiao"].includes(id)) add = 2;
+                else if (["dai_mubai","ning_rongrong","xu_yanxing"].includes(id)) add = 1;
+            } else if (optIndex === 3) { 
+                if (["zhu_zhuqing","ma_hongjun","xie_xie","gu_yue","wang_dong","le_zhengyu","ye_xinglan"].includes(id)) add = 2;
+                else if (["huo_yuhao","tang_ya","osier","xu_yanxing"].includes(id)) add = 1;
+            }
+            scores[id] += add;
+        });
+    }
+
+    function recalcAllScores(scores, answers) {
+        for (let c of CHARACTERS) scores[c.id] = 0;
+        for (let i = 0; i < QUESTIONS.length; i++) {
+            const opt = answers[i];
+            if (opt !== undefined && opt !== null) updateScores(scores, opt);
+        }
+    }
+
+    function getTopCharacter(scores) {
+        let maxId = null, maxVal = -1;
+        for (let c of CHARACTERS) {
+            if (scores[c.id] > maxVal) { maxVal = scores[c.id]; maxId = c.id; }
+        }
+        return CHARACTERS.find(c => c.id === maxId);
+    }
+
+    let currentQuestion = 0;
+    let userAnswers = new Array(QUESTIONS.length).fill(null);
+    let quizScores = {};
+    for (let c of CHARACTERS) quizScores[c.id] = 0;
+    let quizFinished = false;
+    let resultChar = null;
+    const appEl = document.getElementById('app');
+
+    function renderApp() {
+        const heroSection = `
+            <div class="hero">
+                <h1>斗罗大陆性格测试</h1>
+                <p><i class="fas fa-dragon"></i> 测测你的武魂真身 · 寻觅史莱克之魂</p>
+            </div>
+        `;
+        let content = '';
+        if (quizFinished && resultChar) content = renderResultPage();
+        else content = renderQuestionPage();
+        appEl.innerHTML = heroSection + content;
+        if (!quizFinished) attachQuestionEvents();
+        else attachResultEvents();
+    }
+
+    function renderQuestionPage() {
+        const q = QUESTIONS[currentQuestion];
+        const selectedIdx = userAnswers[currentQuestion];
+        const optionsHtml = q.options.map((opt, idx) => `
+            <div class="option ${selectedIdx === idx ? 'selected' : ''}" data-opt-index="${idx}">
+                <span class="option-letter">${String.fromCharCode(65+idx)}</span>
+                <span>${opt}</span>
+            </div>
+        `).join('');
+        return `
+            <div class="quiz-card fade-transition">
+                <div class="question-header">
+                    <span class="q-num"><i class="fas fa-feather-alt"></i> 第 ${currentQuestion+1} 题</span>
+                    <span class="q-total">/${QUESTIONS.length}</span>
+                </div>
+                <div class="question-text">${q.text}</div>
+                <div class="options" id="optionsContainer">${optionsHtml}</div>
+                <div class="btn-group">
+                    <button class="btn" id="prevBtn" ${currentQuestion === 0 ? 'disabled' : ''}><i class="fas fa-arrow-left"></i> 上一题</button>
+                    <button class="btn btn-primary" id="nextBtn">${currentQuestion === QUESTIONS.length-1 ? '揭晓答案' : '下一题'}</button>
+                </div>
+            </div>
+            <footer>✦ 选择你的命运轨迹 ✦</footer>
+        `;
+    }
+
+    function attachQuestionEvents() {
+        const options = document.querySelectorAll('.option');
+        options.forEach(opt => {
+            opt.removeEventListener('click', optionClickHandler);
+            opt.addEventListener('click', optionClickHandler);
+        });
+        function optionClickHandler(e) {
+            const optDiv = e.currentTarget;
+            const idx = parseInt(optDiv.dataset.optIndex);
+            if (userAnswers[currentQuestion] === idx) return;
+            userAnswers[currentQuestion] = idx;
+            recalcAllScores(quizScores, userAnswers);
+            const allOpts = document.querySelectorAll('.option');
+            allOpts.forEach(el => {
+                if (parseInt(el.dataset.optIndex) === idx) el.classList.add('selected');
+                else el.classList.remove('selected');
+            });
+            optDiv.style.transform = "scale(0.98)";
+            setTimeout(() => { if(optDiv) optDiv.style.transform = ""; }, 120);
+        }
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        if (prevBtn) {
+            prevBtn.removeEventListener('click', prevHandler);
+            prevBtn.addEventListener('click', prevHandler);
+        }
+        function prevHandler() { if (currentQuestion > 0) { currentQuestion--; renderApp(); } }
+        if (nextBtn) {
+            nextBtn.removeEventListener('click', nextHandler);
+            nextBtn.addEventListener('click', nextHandler);
+        }
+        function nextHandler() {
+            if (userAnswers[currentQuestion] === null) {
+                nextBtn.style.animation = "shake 0.3s";
+                setTimeout(() => nextBtn.style.animation = "", 300);
+                return;
+            }
+            if (currentQuestion === QUESTIONS.length - 1) {
+                if (userAnswers.some(ans => ans === null)) { alert("请完成全部题目后再揭晓答案！"); return; }
+                recalcAllScores(quizScores, userAnswers);
+                resultChar = getTopCharacter(quizScores);
+                quizFinished = true;
+                renderApp();
+            } else { currentQuestion++; renderApp(); }
+        }
+    }
+
+    function renderResultPage() {
+        if (!resultChar) return '<div class="result-card">加载中...</div>';
+        const totalScore = Object.values(quizScores).reduce((a,b)=>a+b, 1);
+        const maxScore = quizScores[resultChar.id] || 0;
+        let compatPercent = Math.min(96, Math.floor(55 + (maxScore / (totalScore / CHARACTERS.length)) * 22));
+        compatPercent = Math.max(60, compatPercent);
+        const compatDesc = compatPercent > 85 ? "灵魂共鸣，宛如重生！" : (compatPercent > 70 ? "意气相投，武魂契合！" : "潜力伙伴，有待觉醒！");
+        const soulSkills = resultChar.魂技.split(/[【】]/).filter(s => s.trim() && s !== ',' && s !== ' ');
+        return `
+            <div class="result-card fade-transition">
+                <div class="result-avatar">
+                    <img class="character-img" src="${resultChar.img}" alt="${resultChar.name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/140x140?text=${encodeURIComponent(resultChar.name)}';">
+                    <div class="character-name">✨ ${resultChar.name} ✨</div>
+                    <div class="武魂-badge"><span class="武魂-icon">${resultChar.武魂图案}</span> 武魂：${resultChar.武魂}</div>
+                    <div><span class="attr-tag"><i class="fas fa-crosshairs"></i> ${resultChar.属性}</span></div>
+                </div>
+                <div><strong><i class="fas fa-dragon"></i> 魂技：</strong></div>
+                <div class="魂技-grid">${soulSkills.map(s => `<span class="魂技-item">${s}</span>`).join('')}</div>
+                <div><strong><i class="fas fa-heart"></i> 性格特点：</strong> ${resultChar.性格}</div>
+                <div style="margin-top: 1rem;"><strong><i class="fas fa-handshake"></i> 适配程度：</strong> ${compatPercent}% ${compatDesc}</div>
+                <div class="compat-bar"><div class="compat-fill" style="width: ${compatPercent}%;"></div></div>
+                <div style="margin-top:1.8rem; text-align:center;">
+                    <button class="btn btn-primary" id="restartTestBtn"><i class="fas fa-sync-alt"></i> 重测武魂真身</button>
+                </div>
+            </div>
+            <footer>✦ 斗罗大陆性格测试 · 史莱克七怪与伙伴们的召唤 ✦</footer>
+        `;
+    }
+
+    function attachResultEvents() {
+        const restartBtn = document.getElementById('restartTestBtn');
+        if (restartBtn) {
+            restartBtn.removeEventListener('click', restartHandler);
+            restartBtn.addEventListener('click', restartHandler);
+        }
+        function restartHandler() {
+            currentQuestion = 0;
+            userAnswers = new Array(QUESTIONS.length).fill(null);
+            for (let c of CHARACTERS) quizScores[c.id] = 0;
+            quizFinished = false;
+            resultChar = null;
+            renderApp();
+        }
+    }
+
+    function initParticles() {
+        const canvas = document.getElementById('particleCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const PARTICLE_COUNT = 110;
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        for (let i = 0; i < PARTICLE_COUNT; i++) particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: Math.random() * 2.2 + 0.8, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.25, color: `rgba(255,210,90,${Math.random() * 0.5 + 0.2})` });
+        function animate() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let p of particles) {
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill();
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+    }
+    initParticles();
+    renderApp();
+</script>
+</body>
+</html>
