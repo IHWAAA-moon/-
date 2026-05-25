@@ -45,6 +45,8 @@
         @keyframes fadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes shake { 0%,100%{ transform: translateX(0); } 25%{ transform: translateX(-4px); } 75%{ transform: translateX(4px); } }
         @media (max-width:550px){ .question-text{ font-size:1.2rem; } .character-img{ width:100px; height:100px; } .hero h1{ font-size:2rem; } }
+        .progress-bar { background: rgba(255,215,0,0.2); border-radius: 20px; height: 4px; margin-bottom: 1rem; overflow: hidden; }
+        .progress-fill { background: linear-gradient(90deg, #ffd966, #ffaa33); width: 0%; height: 100%; transition: width 0.3s; }
     </style>
 </head>
 <body>
@@ -54,27 +56,27 @@
 
 <script>
     // ============================================================
-    // 斗罗大陆人格测试 (五维精准匹配算法)
-    // 优先加载用户上传的PNG图片，不存在时自动生成头像
+    // 斗罗大陆人格测试 (35题版 · 五维精准匹配)
+    // 20位角色均衡分布，优先加载PNG图片
     // ============================================================
 
-    // ---------- 角色档案 ----------
+    // ---------- 角色档案 (20位，维度数值已优化拉平) ----------
     const ROSTER = [
-        { name:"唐三", wuhun:"昊天锤/蓝银皇", icon:"⚜️🌿", type:"控制·强攻", skills:"【蓝银霸王枪】【昊天九绝】【乱披风锤法】", personality:"沉稳坚韧、智勇双全", color:"#2c3e66", dim:{ E:45, S:60, T:75, J:80, B:85 }, imgFile:"唐三.png" },
+        { name:"唐三", wuhun:"昊天锤/蓝银皇", icon:"⚜️🌿", type:"控制·强攻", skills:"【蓝银霸王枪】【昊天九绝】【乱披风锤法】", personality:"沉稳坚韧、智勇双全", color:"#2c3e66", dim:{ E:45, S:55, T:75, J:75, B:85 }, imgFile:"唐三.png" },
         { name:"小舞", wuhun:"柔骨兔", icon:"🐇🌸", type:"敏攻", skills:"【腰弓】【无敌金身】【爆杀八段摔】", personality:"天真烂漫、为爱执着", color:"#b95f89", dim:{ E:70, S:50, T:30, J:40, B:75 }, imgFile:"小舞.png" },
         { name:"戴沐白", wuhun:"白虎", icon:"🐅⚡", type:"强攻", skills:"【白虎金刚变】【白虎烈光波】", personality:"狂傲霸气、守护同伴", color:"#c99f2e", dim:{ E:75, S:70, T:65, J:70, B:90 }, imgFile:"戴沐白.png" },
         { name:"朱竹清", wuhun:"幽冥灵猫", icon:"🐈⬛🌙", type:"敏攻", skills:"【幽冥影分身】【幽冥斩】", personality:"冷艳孤傲、忠诚", color:"#3b2e4a", dim:{ E:25, S:60, T:70, J:65, B:80 }, imgFile:"朱竹清.png" },
-        { name:"奥斯卡", wuhun:"香肠", icon:"🌭✨", type:"食物系辅助", skills:"【恢复大香肠】【亢奋粉红肠】", personality:"乐观幽默、重义气", color:"#78a56c", dim:{ E:65, S:45, T:40, J:30, B:20 }, imgFile:"奥斯卡.png" },
-        { name:"宁荣荣", wuhun:"九宝琉璃塔", icon:"🏯💎", type:"辅助", skills:"【九宝有名·力】【速】【防御】", personality:"骄傲善良、成长型", color:"#cfb284", dim:{ E:60, S:40, T:35, J:50, B:15 }, imgFile:"宁荣荣.png" },
+        { name:"奥斯卡", wuhun:"香肠", icon:"🌭✨", type:"食物系辅助", skills:"【恢复大香肠】【亢奋粉红肠】", personality:"乐观幽默、重义气", color:"#78a56c", dim:{ E:65, S:45, T:35, J:35, B:20 }, imgFile:"奥斯卡.png" },
+        { name:"宁荣荣", wuhun:"九宝琉璃塔", icon:"🏯💎", type:"辅助", skills:"【九宝有名·力】【速】【防御】", personality:"骄傲善良、成长型", color:"#cfb284", dim:{ E:60, S:40, T:30, J:50, B:15 }, imgFile:"宁荣荣.png" },
         { name:"马红俊", wuhun:"邪火凤凰", icon:"🔥🦅", type:"强攻·火", skills:"【凤凰啸天击】【浴火凤凰】", personality:"豪放直率、重情", color:"#c2492d", dim:{ E:70, S:65, T:55, J:45, B:85 }, imgFile:"马红俊.png" },
         { name:"霍雨浩", wuhun:"灵眸/冰碧蝎", icon:"❄️👁️", type:"精神控制", skills:"【精神探测】【灵魂冲击】", personality:"隐忍坚毅、至情", color:"#3a6ea5", dim:{ E:35, S:35, T:60, J:55, B:70 }, imgFile:"霍雨浩.png" },
-        { name:"王冬", wuhun:"光明女神蝶", icon:"🦋✨", type:"强攻·光", skills:"【蝶神之光】【蝶神斩】", personality:"傲娇直率、善良", color:"#e8b4c7", dim:{ E:55, S:40, T:50, J:45, B:75 }, imgFile:"王冬.png" },
+        { name:"王冬", wuhun:"光明女神蝶", icon:"🦋✨", type:"强攻·光", skills:"【蝶神之光】【蝶神斩】", personality:"傲娇直率、善良", color:"#e8b4c7", dim:{ E:55, S:45, T:50, J:45, B:75 }, imgFile:"王冬.png" },
         { name:"唐雅", wuhun:"蓝银草", icon:"🌿💧", type:"控制", skills:"【蓝银缠绕】【生命之光】", personality:"热情开朗、重视伙伴", color:"#5e8c6a", dim:{ E:65, S:55, T:40, J:50, B:50 }, imgFile:"唐雅.png" },
-        { name:"贝贝", wuhun:"光明圣龙", icon:"🐉✨", type:"强攻", skills:"【光明龙神斩】【圣龙咆哮】", personality:"温润儒雅、有担当", color:"#e5b83c", dim:{ E:55, S:55, T:55, J:65, B:75 }, imgFile:"贝贝.png" },
-        { name:"徐三石", wuhun:"玄武", icon:"🐢⛰️", type:"防御", skills:"【玄武降临】【玄冥震】", personality:"外粗内细、重情义", color:"#4f7942", dim:{ E:50, S:65, T:50, J:60, B:65 }, imgFile:"徐三石.png" },
+        { name:"贝贝", wuhun:"光明圣龙", icon:"🐉✨", type:"强攻", skills:"【光明龙神斩】【圣龙咆哮】", personality:"温润儒雅、有担当", color:"#e5b83c", dim:{ E:50, S:55, T:55, J:65, B:75 }, imgFile:"贝贝.png" },
+        { name:"徐三石", wuhun:"玄武", icon:"🐢⛰️", type:"防御", skills:"【玄武降临】【玄冥震】", personality:"外粗内细、重情义", color:"#4f7942", dim:{ E:45, S:65, T:50, J:60, B:65 }, imgFile:"徐三石.png" },
         { name:"萧萧", wuhun:"三生镇魂鼎", icon:"🔔🎵", type:"控制辅助", skills:"【鼎之震荡】【三生镇魂】", personality:"温柔细腻、坚韧", color:"#8b5f8c", dim:{ E:45, S:50, T:45, J:55, B:40 }, imgFile:"萧萧.png" },
         { name:"乐正宇", wuhun:"神圣天使", icon:"👼✨", type:"强攻", skills:"【圣光审判】【天使之翼】", personality:"正直骄傲、正义感", color:"#e8b12e", dim:{ E:70, S:50, T:60, J:70, B:85 }, imgFile:"乐正宇.png" },
-        { name:"唐舞麟", wuhun:"蓝银草/金龙王", icon:"🌿🐉", type:"强攻恢复", skills:"【金龙爪】【金龙霸体】", personality:"阳光坚韧、不屈", color:"#2f6b47", dim:{ E:60, S:55, T:55, J:60, B:80 }, imgFile:"唐舞麟.png" },
+        { name:"唐舞麟", wuhun:"蓝银草/金龙王", icon:"🌿🐉", type:"强攻恢复", skills:"【金龙爪】【金龙霸体】", personality:"阳光坚韧、不屈", color:"#2f6b47", dim:{ E:55, S:55, T:55, J:60, B:80 }, imgFile:"唐舞麟.png" },
         { name:"古月", wuhun:"元素使者", icon:"🌊🔥🌪️", type:"远攻·元素", skills:"【冰元素掌控】【火元素爆发】", personality:"神秘冷静、内敛", color:"#40a0b0", dim:{ E:30, S:30, T:65, J:50, B:70 }, imgFile:"古月.png" },
         { name:"谢邂", wuhun:"时空之龙", icon:"⏳🐉", type:"敏攻", skills:"【时空逆转】【光龙刃】", personality:"机灵自信、傲娇", color:"#8b6b4d", dim:{ E:55, S:45, T:55, J:40, B:70 }, imgFile:"谢邂.png" },
         { name:"原恩夜辉", wuhun:"泰坦巨猿", icon:"🦍⚡", type:"力量强攻", skills:"【巨猿之握】【泰坦之锤】", personality:"内敛强大、正义", color:"#9b4e3e", dim:{ E:40, S:70, T:60, J:55, B:90 }, imgFile:"原恩夜辉.png" },
@@ -82,7 +84,7 @@
         { name:"叶星澜", wuhun:"星神剑", icon:"⭐🗡️", type:"强攻·剑", skills:"【星光斩】【星神降临】", personality:"清冷孤高、剑心通明", color:"#5d5f7a", dim:{ E:30, S:50, T:70, J:65, B:85 }, imgFile:"叶星澜.png" }
     ];
 
-    // ----- 25道斗罗世界题目 -----
+    // ----- 35道斗罗世界题目 (覆盖所有维度，分布更均衡) -----
     const QUESTIONS = [
         { text: "史莱克考核中，你更想如何证明自己？", opts: ["正面击败强敌", "用计谋智取", "辅助队友获胜", "默默修炼积累"], eff: [{d:"B",v:[90,40,15,30]},{d:"E",v:[70,40,30,80]}] },
         { text: "面对万年魂兽，第一反应是？", opts: ["全力战斗速决", "寻找弱点控制", "保护同伴撤退", "观察后行动"], eff: [{d:"B",v:[95,50,20,40]},{d:"J",v:[80,60,30,50]}] },
@@ -108,7 +110,23 @@
         { text: "战斗决策依赖？", opts: ["战斗本能", "理性计算", "直觉灵感", "同伴建议"], eff: [{d:"N",v:[60,70,80,40]},{d:"F",v:[70,80,30,50]}] },
         { text: "武魂二次觉醒方向？", opts: ["破坏力翻倍", "控制力进化", "辅助范围扩大", "速度极致"], eff: [{d:"B",v:[95,60,10,75]}] },
         { text: "吸引你的魂兽年限？", opts: ["十万年化形", "万年王者", "千年变异", "百年稀有"], eff: [{d:"N",v:[60,80,70,50]},{d:"J",v:[70,50,60,40]}] },
-        { text: "人生最终理想？", opts: ["成神不朽", "守护挚爱", "开创时代", "探寻武魂真理"], eff: [{d:"E",v:[60,30,70,50]},{d:"F",v:[70,40,60,80]}] }
+        { text: "人生最终理想？", opts: ["成神不朽", "守护挚爱", "开创时代", "探寻武魂真理"], eff: [{d:"E",v:[60,30,70,50]},{d:"F",v:[70,40,60,80]}] },
+        // 新增10题（35-35）
+        { text: "在斗魂场一对一战斗中，你的策略是？", opts: ["开局就全力爆发", "试探后寻找破绽", "防守反击耗体力", "用魂技控场压制"], eff: [{d:"B",v:[90,60,40,70]},{d:"J",v:[75,50,65,55]}] },
+        { text: "你的修炼方式是？", opts: ["苦练魂力提升等级", "钻研魂技组合技巧", "冥想感悟武魂真谛", "实战中不断突破"], eff: [{d:"J",v:[70,60,80,40]},{d:"N",v:[40,75,85,50]}] },
+        { text: "收到不喜欢的人送的礼物会？", opts: ["直接拒绝", "礼貌收下但不使用", "转送给需要的人", "勉强收下心里别扭"], eff: [{d:"F",v:[80,30,50,40]},{d:"E",v:[70,60,40,50]}] },
+        { text: "更希望与谁并肩作战？", opts: ["实力碾压的强者", "默契十足的老友", "头脑灵活的策略家", "稳定可靠的守护者"], eff: [{d:"B",v:[85,40,60,30]},{d:"F",v:[30,80,50,70]}] },
+        { text: "你的日常生活习惯？", opts: ["严格按计划执行", "随性自由发挥", "有条理但有弹性", "完全看心情"], eff: [{d:"J",v:[85,20,65,35]},{d:"P",v:[15,80,35,65]}] },
+        { text: "对于武魂融合技的看法？", opts: ["追求极致融合", "顺其自然不强求", "独自强大更重要", "愿意为伙伴配合"], eff: [{d:"E",v:[60,40,20,70]},{d:"B",v:[80,30,90,50]}] },
+        { text: "遇到前所未见的强敌？", opts: ["激发斗志正面迎战", "冷静分析寻找弱点", "暂时撤退从长计议", "相信同伴联手对抗"], eff: [{d:"B",v:[90,60,30,50]},{d:"J",v:[70,60,80,40]}] },
+        { text: "你的领导风格？", opts: ["强势决策令行禁止", "集思广益民主讨论", "以身作则引领团队", "放权给信任的伙伴"], eff: [{d:"E",v:[80,50,70,40]},{d:"J",v:[85,40,60,50]}] },
+        { text: "最不能接受的事情？", opts: ["背叛与欺骗", "实力被轻视", "同伴受到伤害", "自由被束缚"], eff: [{d:"F",v:[80,30,90,40]},{d:"B",v:[70,90,85,30]}] },
+        { text: "你觉得自己更像哪种武魂？", opts: ["霸道刚猛型", "灵动迅捷型", "包容守护型", "神秘莫测型"], eff: [{d:"B",v:[90,75,30,60]},{d:"N",v:[40,50,70,85]}] },
+        { text: "面对选择时更看重？", opts: ["长远利益", "当下感受", "他人建议", "直觉判断"], eff: [{d:"J",v:[75,40,50,60]},{d:"N",v:[60,35,45,80]}] },
+        { text: "你的情感表达方式？", opts: ["直白热烈", "含蓄内敛", "行动代替语言", "幽默调侃"], eff: [{d:"E",v:[85,20,50,70]},{d:"F",v:[70,30,60,50]}] },
+        { text: "对于未知的魂技领域？", opts: ["渴望探索冒险", "谨慎研究再尝试", "跟随前人脚步", "创造自己道路"], eff: [{d:"N",v:[85,60,40,75]},{d:"J",v:[70,80,50,65]}] },
+        { text: "你的睡眠习惯？", opts: ["规律作息", "熬夜修炼", "随困随睡", "早起修炼"], eff: [{d:"J",v:[80,30,50,70]},{d:"P",v:[20,70,50,30]}] },
+        { text: "最终想达到的境界？", opts: ["神级强者", "守护重要之人", "探索武魂奥秘", "逍遥自在随心"], eff: [{d:"B",v:[90,50,40,30]},{d:"F",v:[30,85,50,60]}] }
     ];
 
     // 计算用户维度
@@ -126,6 +144,7 @@
                 else if(dim === "J") { sums.J += val; cnts.J++; }
                 else if(dim === "F") { sums.F += val; cnts.F++; }
                 else if(dim === "N") { sums.N += val; cnts.N++; }
+                else if(dim === "P") { sums.P += val; cnts.P++; }
             }
         }
         let avg = (s,c) => c>0 ? s/c : 50;
@@ -185,16 +204,16 @@
     let selections = new Array(QUESTIONS.length).fill(null);
     let testFinished = false;
     let matched = null;
-    let dimResult = null;
     const app = document.getElementById('app');
 
     function renderFull() {
+        const progress = ((curIdx + (testFinished ? QUESTIONS.length : 0)) / QUESTIONS.length) * 100;
         const hero = `<div class="hero"><h1>斗罗大陆人格测试</h1><p><i class="fas fa-dragon"></i> 测测你的武魂真身 · 寻觅史莱克之魂</p></div>`;
         if(testFinished && matched) {
             app.innerHTML = hero + renderResult();
             document.getElementById('restartBtn')?.addEventListener('click', resetTest);
         } else {
-            app.innerHTML = hero + renderQuiz();
+            app.innerHTML = hero + `<div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>` + renderQuiz();
             bindQuizEvents();
         }
     }
@@ -203,16 +222,16 @@
         const q = QUESTIONS[curIdx];
         const sel = selections[curIdx];
         return `<div class="quiz-card fade-transition">
-            <div class="question-header"><span class="q-num"><i class="fas fa-feather-alt"></i> 第${curIdx+1}/25题</span></div>
+            <div class="question-header"><span class="q-num"><i class="fas fa-feather-alt"></i> 第${curIdx+1}/${QUESTIONS.length}题</span></div>
             <div class="question-text">${q.text}</div>
             <div class="options" id="optArea">
                 ${q.opts.map((opt,i) => `<div class="option ${sel===i ? 'selected' : ''}" data-val="${i}"><span class="option-letter">${String.fromCharCode(65+i)}</span><span>${opt}</span></div>`).join('')}
             </div>
             <div class="btn-group">
                 <button class="btn" id="prevBtn" ${curIdx===0 ? 'disabled' : ''}><i class="fas fa-arrow-left"></i> 上一题</button>
-                <button class="btn btn-primary" id="nextBtn">${curIdx===24 ? '揭晓答案' : '下一题'}</button>
+                <button class="btn btn-primary" id="nextBtn">${curIdx===QUESTIONS.length-1 ? '揭晓答案' : '下一题'}</button>
             </div>
-        </div><footer>✦ 选择你的命运轨迹 ✦</footer>`;
+        </div><footer>✦ 选择你的命运轨迹 · 共${QUESTIONS.length}题 ✦</footer>`;
     }
 
     function bindQuizEvents() {
@@ -233,10 +252,10 @@
                 setTimeout(()=>next.style.animation="",300);
                 return;
             }
-            if(curIdx === 24) {
-                if(selections.some(v=>v===null)) { alert("请完成全部25道题目，再揭晓答案！"); return; }
-                dimResult = computeUserDimensions(selections);
-                matched = findBestCharacter(dimResult);
+            if(curIdx === QUESTIONS.length-1) {
+                if(selections.some(v=>v===null)) { alert("请完成全部题目，再揭晓答案！"); return; }
+                const userDims = computeUserDimensions(selections);
+                matched = findBestCharacter(userDims);
                 testFinished = true;
                 renderFull();
             } else {
@@ -248,7 +267,7 @@
 
     function renderResult() {
         const skills = matched.skills.split(/[【】]/).filter(s=>s.trim());
-        const compat = Math.floor(65 + Math.random() * 28);
+        const compat = Math.floor(68 + Math.random() * 27);
         const imgSrc = matched.imgFile;
         const fallbackSrc = drawFallbackAvatar(matched);
         
@@ -272,7 +291,6 @@
         selections.fill(null);
         testFinished = false;
         matched = null;
-        dimResult = null;
         renderFull();
     }
 
